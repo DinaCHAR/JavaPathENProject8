@@ -90,7 +90,7 @@ public class TourGuideController {
                     user.getUserId()
                 );
 
-                // Création de l'objet de réponse contenant toutes les données demandées
+                // Création de l'objet de réponse contenant toutes les données de l'utilisteur
                 return new NearbyAttractionInfo(
                     attraction.attractionName,                 // Nom de l'attraction
                     attraction.latitude,                       // Latitude de l'attraction
