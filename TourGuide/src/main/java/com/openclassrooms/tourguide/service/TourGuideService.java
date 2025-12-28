@@ -1,13 +1,7 @@
 package com.openclassrooms.tourguide.service;
 
-import com.openclassrooms.tourguide.helper.InternalTestHelper;
-import com.openclassrooms.tourguide.tracker.Tracker;
-import com.openclassrooms.tourguide.user.User;
-import com.openclassrooms.tourguide.user.UserReward;
-
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +9,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -22,11 +19,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.openclassrooms.tourguide.helper.InternalTestHelper;
+import com.openclassrooms.tourguide.tracker.Tracker;
+import com.openclassrooms.tourguide.user.User;
+import com.openclassrooms.tourguide.user.UserReward;
+
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
-
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
@@ -88,11 +89,55 @@ public class TourGuideService {
 		return providers;
 	}
 
+	// Création d'un pool de threads
+	// Le nombre de threads est basé sur le nombre de cœurs CPU disponibles multiplié par 4
+	// Cela permet d'exécuter plusieurs tâches en parallèle (GPS + rewards)
+	private final ExecutorService executorService =
+	    Executors.newFixedThreadPool(
+	        Runtime.getRuntime().availableProcessors() * 4
+	    );
+
 	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
+	    try {
+
+	        // Création d'une tâche asynchrone qui récupère la position de l'utilisateur
+	        // CompletableFuture permet d'exécuter cette tâche dans un thread du pool
+	        CompletableFuture<VisitedLocation> locationFuture =
+	            CompletableFuture.supplyAsync(() -> {
+
+	                // Appel au service GPS pour récupérer la position de l'utilisateur
+	                VisitedLocation visitedLocation =
+	                    gpsUtil.getUserLocation(user.getUserId());
+
+	                // Ajout de la position récupérée à l'historique des localisations de l'utilisateur
+	                user.addToVisitedLocations(visitedLocation);
+
+	                // Retour de la position visitée
+	                return visitedLocation;
+
+	            }, executorService);
+
+	        // Récupération du résultat de la tâche asynchrone
+	        // Cette ligne est bloquante : le thread attend que la position soit disponible
+	        VisitedLocation visitedLocation = locationFuture.get();
+
+	        // Lancement asynchrone du calcul des récompenses
+	        // Cette tâche ne bloque pas le retour de la méthode
+	        CompletableFuture.runAsync(
+	            () -> rewardsService.calculateRewards(user),
+	            executorService
+	        );
+
+	        // Retour de la position visitée à l'appelant
+	        return visitedLocation;
+
+	    } catch (Exception e) {
+
+	        // Gestion des exceptions :
+	        // toute erreur survenue lors de l'exécution asynchrone
+	        // est encapsulée dans une RuntimeException
+	        throw new RuntimeException("Error tracking user location", e);
+	    }
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
