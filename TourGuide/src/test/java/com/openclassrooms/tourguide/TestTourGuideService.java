@@ -14,6 +14,7 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 import rewardCentral.RewardCentral;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
+import com.openclassrooms.tourguide.model.NearbyAttractionInfo;
 import com.openclassrooms.tourguide.service.RewardsService;
 import com.openclassrooms.tourguide.service.TourGuideService;
 import com.openclassrooms.tourguide.user.User;
@@ -130,7 +131,7 @@ public class TestTourGuideService {
 
 	    // Récupération des attractions proches de la position de l'utilisateur
 	    // Cette méthode renvoie une liste d'attractions
-	    List<Attraction> attractions =
+	    List<NearbyAttractionInfo> attractions =
 	        tourGuideService.getNearByAttractions(visitedLocation);
 
 	    // Arrêt du tracker pour éviter les threads actifs après le test

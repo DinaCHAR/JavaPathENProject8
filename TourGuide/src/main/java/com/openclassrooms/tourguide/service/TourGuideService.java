@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
+import com.openclassrooms.tourguide.model.NearbyAttractionInfo;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
@@ -140,7 +141,8 @@ public class TourGuideService {
 	    }
 	}
 
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
+	//ANCIENNE METHODE
+	/*public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
 	    // Récupération de toutes les attractions disponibles via le service GPS
 	    return gpsUtil.getAttractions().stream()
 	        // Tri des attractions par distance croissante par rapport à la position de l'utilisateur
@@ -155,6 +157,61 @@ public class TourGuideService {
 
 	        // Conversion du stream en liste de résultats
 	        .collect(Collectors.toList());
+	}*/
+	
+	//METHODE CORRIGER POUR RENVOYER LES CINQ ATTRACTIONS
+	public List<NearbyAttractionInfo> getNearByAttractions(VisitedLocation visitedLocation){
+		// Récupération de la liste complète de toutes les attractions disponibles
+        List<Attraction> allAttractions = gpsUtil.getAttractions();
+            
+        // Transformation de la liste des attractions :
+        // calcul de la distance
+        // récupération des points de récompense
+        // création d'un objet NearbyAttractionInfo
+        // tri par distance
+        // limitation aux 5 attractions les plus proches
+        return allAttractions.stream()
+
+            // Pour chaque attraction, on calcule les informations nécessaires
+            .map(attraction -> {
+
+                // Calcul de la distance entre l'utilisateur et l'attraction (en miles)
+                double distance = rewardsService.getDistance(
+                    visitedLocation.location,
+                    attraction
+                );
+
+                // Récupération des points de récompense pour cette attraction
+                int rewardPoints = rewardsService.getRewardCentral().getAttractionRewardPoints(
+                    attraction.attractionId,
+                    visitedLocation.userId
+                );
+                
+                Location locationAttraction = new Location(attraction.latitude, attraction.longitude);
+
+                Location locationUser = visitedLocation.location;
+                
+                // Création de l'objet de réponse contenant toutes les données de l'utilisteur
+                return new NearbyAttractionInfo(
+                    attraction.attractionName,
+                    locationAttraction,							//Latitude et Longitude (encapsule les deux)
+                    locationUser,								//Latitude et longitude 
+                    distance,                                  // Distance en miles
+                    rewardPoints                               // Points de récompense
+                );
+            })
+
+            // Tri des attractions par distance croissante (les plus proches en premier)
+            .sorted((a1, a2) -> Double.compare(
+                a1.getDistanceInMiles(),
+                a2.getDistanceInMiles()
+            ))
+
+            // On ne garde que les 5 attractions les plus proches
+            .limit(5)
+
+            // Conversion du stream en liste
+            .collect(Collectors.toList());
 	}
 
 	private void addShutDownHook() {

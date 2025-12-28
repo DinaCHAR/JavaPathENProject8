@@ -40,6 +40,10 @@ public class RewardsService {
 		cachedAttractions.addAll(gpsUtil.getAttractions());
 	}
 	
+	public RewardCentral getRewardCentral() {
+		return rewardsCentral;
+	}
+	
 	public void setProximityBuffer(int proximityBuffer) {
 		this.proximityBuffer = proximityBuffer;
 	}

@@ -63,56 +63,8 @@ public class TourGuideController {
 
         // Récupération de la dernière position connue de l'utilisateur
         VisitedLocation visitedLocation = tourGuideService.getUserLocation(user);
-
-        // Récupération de la liste complète de toutes les attractions disponibles
-        List<Attraction> allAttractions = gpsUtil.getAttractions();
-            
-        // Transformation de la liste des attractions :
-        // calcul de la distance
-        // récupération des points de récompense
-        // création d'un objet NearbyAttractionInfo
-        // tri par distance
-        // limitation aux 5 attractions les plus proches
-        return allAttractions.stream()
-
-            // Pour chaque attraction, on calcule les informations nécessaires
-            .map(attraction -> {
-
-                // Calcul de la distance entre l'utilisateur et l'attraction (en miles)
-                double distance = rewardsService.getDistance(
-                    visitedLocation.location,
-                    attraction
-                );
-
-                // Récupération des points de récompense pour cette attraction
-                int rewardPoints = rewardCentral.getAttractionRewardPoints(
-                    attraction.attractionId,
-                    user.getUserId()
-                );
-
-                // Création de l'objet de réponse contenant toutes les données de l'utilisteur
-                return new NearbyAttractionInfo(
-                    attraction.attractionName,                 // Nom de l'attraction
-                    attraction.latitude,                       // Latitude de l'attraction
-                    attraction.longitude,                      // Longitude de l'attraction
-                    visitedLocation.location.latitude,         // Latitude de l'utilisateur
-                    visitedLocation.location.longitude,        // Longitude de l'utilisateur
-                    distance,                                  // Distance en miles
-                    rewardPoints                               // Points de récompense
-                );
-            })
-
-            // Tri des attractions par distance croissante (les plus proches en premier)
-            .sorted((a1, a2) -> Double.compare(
-                a1.getDistanceInMiles(),
-                a2.getDistanceInMiles()
-            ))
-
-            // On ne garde que les 5 attractions les plus proches
-            .limit(5)
-
-            // Conversion du stream en liste
-            .collect(Collectors.toList());
+        
+        return tourGuideService.getNearByAttractions(visitedLocation);
     }
     
     @RequestMapping("/getRewards") 
