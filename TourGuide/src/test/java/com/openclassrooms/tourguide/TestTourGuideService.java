@@ -92,22 +92,52 @@ public class TestTourGuideService {
 		assertEquals(user.getUserId(), visitedLocation.userId);
 	}
 
-	@Disabled // Not yet implemented
+	//@Disabled // Not yet implemented
 	@Test
 	public void getNearbyAttractions() {
-		GpsUtil gpsUtil = new GpsUtil();
-		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
-		InternalTestHelper.setInternalUserNumber(0);
-		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
-		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
-		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+	    // Création d'une instance de GpsUtil
+	    // Sert à récupérer les attractions et à simuler la localisation GPS
+	    GpsUtil gpsUtil = new GpsUtil();
 
-		List<Attraction> attractions = tourGuideService.getNearByAttractions(visitedLocation);
+	    // Création du service RewardsService
+	    // Il permet de calculer les distances et de récupérer les points de récompense
+	    RewardsService rewardsService = new RewardsService(
+	        gpsUtil,
+	        new RewardCentral()
+	    );
 
-		tourGuideService.tracker.stopTracking();
+	    // Configuration interne des tests :
+	    // Ici, on force le nombre d'utilisateurs internes à 0
+	    // pour éviter l'initialisation automatique d'utilisateurs
+	    InternalTestHelper.setInternalUserNumber(0);
 
-		assertEquals(5, attractions.size());
+	    // Création du service principal TourGuideService
+	    // Il orchestre le GPS, les récompenses et le suivi utilisateur
+	    TourGuideService tourGuideService = new TourGuideService(
+	        gpsUtil,
+	        rewardsService
+	    );
+
+	    // Création manuelle d'un utilisateur de test
+	    User user = new User(
+	        UUID.randomUUID(),"jon","000","jon@tourGuide.com"
+	    );
+
+	    // Récupération de la position de l'utilisateur
+	    // Cette méthode déclenche un appel au GPS
+	    VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
+
+	    // Récupération des attractions proches de la position de l'utilisateur
+	    // Cette méthode renvoie une liste d'attractions
+	    List<Attraction> attractions =
+	        tourGuideService.getNearByAttractions(visitedLocation);
+
+	    // Arrêt du tracker pour éviter les threads actifs après le test
+	    tourGuideService.tracker.stopTracking();
+
+	    // Vérification que la méthode retourne exactement 5 attractions
+	    assertEquals(5, attractions.size());
 	}
 
 	public void getTripDeals() {

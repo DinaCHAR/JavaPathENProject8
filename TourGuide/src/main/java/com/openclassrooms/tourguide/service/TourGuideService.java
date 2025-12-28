@@ -96,22 +96,35 @@ public class TourGuideService {
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for (Attraction attraction : gpsUtil.getAttractions()) {
-			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
-		}
+	    // Récupération de toutes les attractions disponibles via le service GPS
+	    return gpsUtil.getAttractions().stream()
+	        // Tri des attractions par distance croissante par rapport à la position de l'utilisateur
+	        // Les attractions les plus proches seront placées en premier
+	        .sorted((a1, a2) -> Double.compare(
+	            rewardsService.getDistance(visitedLocation.location, a1),
+	            rewardsService.getDistance(visitedLocation.location, a2)
+	        ))
 
-		return nearbyAttractions;
+	        // Limitation de la liste aux 5 attractions les plus proches
+	        .limit(5)
+
+	        // Conversion du stream en liste de résultats
+	        .collect(Collectors.toList());
 	}
 
 	private void addShutDownHook() {
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				tracker.stopTracking();
-			}
-		});
+
+	    // Ajout d'un hook d'arrêt de la JVM
+	    // Ce hook est exécuté automatiquement lorsque l'application se termine
+	    Runtime.getRuntime().addShutdownHook(new Thread() {
+
+	        // Code exécuté lors de l'arrêt de l'application
+	        public void run() {
+
+	            // Arrêt propre du tracker afin d'éviter des threads actifs
+	            tracker.stopTracking();
+	        }
+	    });
 	}
 
 	/**********************************************************************************
